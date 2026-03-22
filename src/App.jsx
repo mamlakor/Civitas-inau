@@ -6,9 +6,15 @@ import {
 } from 'lucide-react';
 
 // --- CONFIGURATION API GEMINI ---
-const apiKey = ""; // La clé est injectée au runtime par l'environnement
+// Note: apiKey est géré par l'environnement
+const apiKey = ""; 
 
 const fetchGemini = async (prompt, systemInstruction = "") => {
+  // ARRÊT IMMÉDIAT SI PAS DE CLÉ (Évite de faire tourner le bouton dans le vide)
+  if (!apiKey || apiKey === "") {
+    throw new Error("Clé API manquante");
+  }
+  
   let delay = 1000;
   for (let i = 0; i < 5; i++) {
     try {
@@ -64,12 +70,18 @@ const AIStyleAdvisor = () => {
   const getStyleAdvice = async () => {
     if (!occasion) return;
     setLoading(true);
-    const result = await fetchGemini(
-      `Suggère un look complet utilisant les produits Civitas pour cette occasion : ${occasion}.`,
-      "Tu es un expert en mode 'Terrace Wear' et culture Ultra. Réponds en français de manière percutante."
-    );
-    setAdvice(result);
-    setLoading(false);
+    setAdvice(""); // Reset l'ancien texte
+    try {
+      const result = await fetchGemini(
+        `Suggère un look complet utilisant les produits Civitas pour : ${occasion}.`,
+        "Tu es un expert en mode 'Terrace Wear' et culture Ultra. Réponds en français de manière percutante."
+      );
+      setAdvice(result);
+    } catch (err) {
+      setAdvice("L'Architecte est indisponible. Vérifie ta connexion ou la configuration de la clé.");
+    } finally {
+      setLoading(false); // ARRÊTE LE SPINNER DANS TOUS LES CAS
+    }
   };
 
   return (
@@ -93,9 +105,9 @@ const AIStyleAdvisor = () => {
           <button 
             onClick={getStyleAdvice}
             disabled={loading || !occasion}
-            className="px-8 py-4 bg-white text-black font-[900] rounded-xl uppercase text-[10px] hover:bg-green-600 hover:text-white transition-all"
+            className="px-8 py-4 bg-white text-black font-[900] rounded-xl uppercase text-[10px] hover:bg-green-600 hover:text-white transition-all flex items-center justify-center gap-2"
           >
-            {loading ? <Loader2 className="animate-spin" /> : "Conseil"}
+            {loading ? <Loader2 className="animate-spin" size={14} /> : "Générer"}
           </button>
         </div>
         {advice && (
@@ -127,8 +139,6 @@ const ShopView = ({ addToCart }) => (
         <p className="text-green-500 font-black uppercase tracking-[0.4em] text-[7px] md:text-xs mb-8 opacity-80">
           Be a member not just a Number
         </p>
-        
-        {/* BOUTON AVEC ANIMATION DE REMPLISSAGE RESTAURÉE */}
         <button 
           onClick={() => document.getElementById('collection').scrollIntoView({ behavior: 'smooth' })} 
           className="group relative px-10 py-5 bg-white text-black font-[900] uppercase text-[10px] rounded-full overflow-hidden transition-all active:scale-95"
@@ -141,7 +151,6 @@ const ShopView = ({ addToCart }) => (
 
     <section id="collection" className="max-w-[1400px] mx-auto px-4 py-16">
       <div className="flex flex-col md:flex-row items-baseline justify-between mb-16 border-l-4 border-green-500 pl-6">
-        {/* TEXTE MODIFIÉ ICI */}
         <h2 className="text-4xl md:text-6xl font-[900] uppercase italic text-white tracking-tighter">Notre collection</h2>
       </div>
 
@@ -318,7 +327,7 @@ export default function App() {
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
         body { font-family: 'Inter', sans-serif; background-color: black; overflow-x: hidden; letter-spacing: -0.02em; }
         .animate-fade-in { animation: fadeIn 0.8s ease-out forwards; opacity: 0; }
-        .animate-fade-in-up { animation: fadeInUp 0.8s ease-out forwards; }
+        .animate-fade-in-up { animation: fadeInUp 1s ease-out forwards; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         html { scroll-behavior: smooth; }
